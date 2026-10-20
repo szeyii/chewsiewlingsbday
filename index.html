@@ -51,8 +51,9 @@ h1{font-size:clamp(18px,5vw,36px);line-height:1.4;text-align:center;color:#F8EDE
 @keyframes bob{50%{transform:translateY(-6px)}}
 #modal{position:relative;z-index:52;width:min(680px,100%);text-align:center;animation:pop .35s steps(4)}
 @keyframes pop{from{transform:scale(.6)}to{transform:scale(1)}}
-.vw{border-radius:16px;overflow:hidden;aspect-ratio:16/9;background:#000;border:4px solid var(--ink);margin:10px 0 16px}
-.vw video,.vw iframe{width:100%;height:100%;display:block;border:0}
+.vw{border-radius:16px;overflow:hidden;aspect-ratio:9/16;background:#000;border:4px solid var(--ink);
+  height:min(70vh,640px,calc((100vw - 64px)*16/9));width:auto;margin:10px auto 16px}
+.vw video,.vw iframe{width:100%;height:100%;display:block;border:0;object-fit:cover}
 #wall{position:fixed;inset:0;z-index:60;background:rgba(91,63,102,.95);overflow:auto;padding:56px 12px 30px}
 #wall .in{max-width:900px;margin:0 auto}
 .g{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin:14px 0}
@@ -126,7 +127,7 @@ h2{font-size:14px;color:#F8EDE1;text-align:center;margin-top:8px}
     <div class="vw">
       <!-- VIDEO: replace the src below with your own file (e.g. "birthday-video.mp4" next to this HTML file),
            or a direct link to an .mp4. Put a thumbnail in poster="" if you like. -->
-      <video controls playsinline preload="metadata" poster="">
+      <video id="vid" controls playsinline preload="auto" poster="">
         <source src="bdayvid1.mp4" type="video/mp4">
         Your browser can't play this video.
       </video>
@@ -323,9 +324,9 @@ function tone(f,t,d,type='square',v=.06){ac=ac||new (window.AudioContext||window
   const s=ac.currentTime+t;g.gain.setValueAtTime(v,s);g.gain.exponentialRampToValueAtTime(.001,s+d);o.start(s);o.stop(s+d)}
 function sfx(el,notes){if(muted)return;el.currentTime=0;el.play().catch(()=>notes.forEach((n,i)=>tone(n,i*.09,.16)))}
 const MEL=[440,0,523,0,659,523,440,0,392,0,523,0,587,523,392,0],BASS=[110,110,131,98];
-function synthMusic(){if(mt)return;mt=setInterval(()=>{if(muted)return;const m=MEL[step%16];if(m)tone(m,0,.18,'square',.025);if(step%4===0)tone(BASS[(step/4|0)%4],0,.5,'triangle',.05);step++},240)}
+function synthMusic(){if(mt)return;mt=setInterval(()=>{if(muted||!$('vid').paused)return;const m=MEL[step%16];if(m)tone(m,0,.18,'square',.025);if(step%4===0)tone(BASS[(step/4|0)%4],0,.5,'triangle',.05);step++},240)}
 function startMusic(){A.music.volume=.5;A.music.play().catch(synthMusic)}
-$('mute').onclick=()=>{muted=!muted;Object.values(A).forEach(a=>a.muted=muted);$('mute').textContent='SOUND: '+(muted?'OFF':'ON');$('mute').setAttribute('aria-pressed',muted)};
+$('mute').onclick=()=>{muted=!muted;Object.values(A).forEach(a=>a.muted=muted);$('vid').muted=muted;$('mute').textContent='SOUND: '+(muted?'OFF':'ON');$('mute').setAttribute('aria-pressed',muted)};
 
 /* ---------- outfit select ---------- */
 let sel=0;
@@ -533,8 +534,11 @@ function reveal(){
   (function f(){g.clearRect(0,0,cv.width,cv.height);
     ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vx*=.97;p.vy=Math.min(p.vy+.06,1.3);p.ph+=.08;if(p.y>cv.height){p.y=-4;p.x=Math.random()*cv.width;p.vx=0;p.vy=.6+Math.random()}g.fillStyle=p.c;g.fillRect(p.x+Math.sin(p.ph)*2|0,p.y|0,p.s,p.s)});
     requestAnimationFrame(f)})();
-  setTimeout(()=>$('modal').hidden=false,2200)}
-$('again').onclick=()=>location.reload();
+    setTimeout(()=>{$('modal').hidden=false;playVid()},2200)}
+function playVid(){const v=$('vid');v.currentTime=0;v.muted=muted;A.music.pause();
+  v.play().catch(()=>{v.muted=true;v.play().catch(()=>{})})}
+$('vid').onended=()=>{if(!muted)A.music.play().catch(()=>{})};
+  $('again').onclick=()=>location.reload();
 
 /* ---------- gallery / wish wall ---------- */
 $('gal').onclick=()=>{
